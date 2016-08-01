@@ -12,13 +12,13 @@ function timerlog(message, options={}) {
     message = undefined;
 
     Object.keys(options).forEach(k => {
-        if( ! ['message', 'start_timer', 'end_timer', 'timestamp', 'measured_time', 'tag', 'disabled', 'log_id', 'measured_time_threshold', ].includes(k) ) {
+        if( ! ['message', 'id', 'start_timer', 'end_timer', 'timestamp', 'measured_time', 'tag', 'disabled', 'measured_time_threshold', ].includes(k) ) {
             throw new Error(ERROR_PREFIX+'unknown argument `'+k+'`');
         }
     });
 
     if( options.start_timer && !options.end_timer ) {
-        return options.log_id;
+        return options.id;
     }
     if( options.measured_time !== undefined && options.measured_time < options.measured_time_threshold ) {
         return;
@@ -51,21 +51,26 @@ function process_options(message, options) {
 
     if( options.start_timer ) {
         options.timestamp = options.timestamp || get_timestamp();
-        options.log_id = Math.random();
+        options.id = options.id || Math.random();
+        if( options_storage[options.id] ) {
+            throw new Error("trying to start a new timer while a timer is already running for `"+options.id+"`");
+        }
     }
     if( options.end_timer ) {
         const timestamp = get_timestamp();
-        const options_stored = options_storage[options.log_id || options.end_timer];
-        if( ! options_stored ) throw new Error("`log_id` or `end_timer` should be an ID returned when `start_timer` is truhty");
+        const storage_key = options.id || ![true,false].includes(options.end_timer) && options.end_timer;
+        if( !storage_key ) throw new Error("`id` should be an ID or `end_timer` should be the value returned when `start_timer` is truhty");
+        const options_stored = options_storage[storage_key];
+        if( !options_stored ) throw new Error("couldn't find options storage for `"+storage_key+"`");
         options = Object.assign({}, options_stored, options);
         options.measured_time = options.measured_time || timestamp - options.timestamp;
     }
 
     if( options.start_timer ) {
-        options_storage[options.log_id] = options;
+        options_storage[options.id] = options;
     }
     if( options.end_timer ) {
-        delete options_storage[options.log_id];
+        delete options_storage[options.id];
     }
 
     return options;
