@@ -1,7 +1,7 @@
 var timerlog = require('./dist/index.es5.js');
 
 
-var AMOUNT = 10e6;
+var AMOUNT = 1e6;
 
 var log_id = timerlog({
     message: 'A million random numbers generated',

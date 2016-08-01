@@ -1,13 +1,13 @@
 ### Usage
 
-Following will print `[timerlog][generate-random-numbers][709ms] A million random numbers generated`
+Following will print `[timerlog][generate-random-numbers][70ms] A million random numbers generated`
 
 ```js
 // example.js
 var timerlog = require('timerlog');
 
 
-var AMOUNT = 10e6;
+var AMOUNT = 1e6;
 
 var log_id = timerlog({
     message: 'A million random numbers generated',
