@@ -8,7 +8,7 @@ var log_id = timerlog({
     start_timer: true,
     tag: 'generate-random-numbers',
     measured_time_threshold: 10, // only print if measured time is greater than 10ms
-    disabled: false, // `disabled: true` -> do not print
+    disabled: false // `disabled: true` -> do not print
 });
 
 let sum = 0;
