@@ -1,6 +1,6 @@
 {
   "name": "timerlog",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A small utility to measure and log time",
   "repository": "github:brillout/timerlog",
   "main": "dist/index.es5.js",

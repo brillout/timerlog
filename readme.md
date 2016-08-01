@@ -3,7 +3,8 @@
 Following will print `[timerlog][generate-random-numbers][709ms] A million random numbers generated`
 
 ```js
-var timerlog = require('./dist/index.es5.js');
+// example.js
+var timerlog = require('timerlog');
 
 
 var AMOUNT = 10e6;
