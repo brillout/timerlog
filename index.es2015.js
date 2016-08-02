@@ -73,6 +73,13 @@ function process_options(message, options) {
         delete options_storage[options.id];
     }
 
+    if( ! options.message && options.id ) {
+        options.message = options.id;
+    }
+    if( ! options.message ) {
+        throw new Error(ERROR_PREFIX+'`message` or `id` argument required');
+    }
+
     return options;
 }
 
