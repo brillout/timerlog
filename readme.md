@@ -23,6 +23,7 @@ for(var i=0; i<AMOUNT; i++) {
 }
 
 timerlog({
-    end_timer: log_id,
+    id: log_id,
+    end_timer: true,
 });
 ```
