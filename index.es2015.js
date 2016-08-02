@@ -12,12 +12,12 @@ function timerlog() {
     const options = process_arguments.apply(null, arguments);
 
     Object.keys(options).forEach(k => {
-        if( ! ['message', 'id', 'start_timer', 'end_timer', 'timestamp', 'measured_time', 'tag', 'disabled', 'measured_time_threshold', ].includes(k) ) {
+        if( ! ['message', 'id', 'start_timer', 'end_timer', 'start_timestamp', 'measured_time', 'tag', 'disabled', 'measured_time_threshold', 'lap_time', 'nth_lap_time', ].includes(k) ) {
             throw new Error(WRONG_USAGE+'unknown argument `'+k+'`');
         }
     });
 
-    if( options.start_timer && !options.end_timer ) {
+    if( options.start_timer && !options.end_timer && !options.lap_time ) {
         return options.id;
     }
     if( options.measured_time !== undefined && options.measured_time < options.measured_time_threshold ) {
@@ -34,41 +34,55 @@ function process_arguments() {
         throw new Error(WRONG_USAGE+PROJECT_NAME+' should be called with exactly one argument and this argument should be an object');
     }
 
-    const opts = arguments[0];
+    let opts = arguments[0];
 
-    if( opts.end_timer && opts.start_timer ) {
-        throw new Error(WRONG_USAGE+"having both `start_timer` and `end_timer` doesn't make sense");
-    }
-    if( !opts.message && !opts.id ) {
-        throw new Error(WRONG_USAGE+'`message` or `id` required');
+    if( [opts.lap_time, opts.start_timer, opts.end_timer].filter(v=>!!v).length > 1 ) {
+        throw new Error(WRONG_USAGE+"only exactly one of `start_timer`, `end_timer`, or `lap_time` should be truthy");
     }
 
-    if( opts.start_timer ) {
-        opts.timestamp = opts.timestamp || get_timestamp();
-        opts.id = opts.id || Math.random();
-        if( options_storage[opts.id] ) {
-            throw new Error("trying to start a new timer while a timer is already running for `"+opts.id+"`");
-        }
+    if( opts.lap_time || opts.start_timer || opts.end_timer ) {
+        opts = handle_timer_logic(opts);
     }
-    if( opts.end_timer ) {
-        const timestamp = get_timestamp();
-        if( ! opts.id ) throw new Error("`id` required when `opts.end_timer==true`");
-        const options_stored = options_storage[opts.id];
-        if( ! options_stored ) throw new Error("couldn't find options storage for `"+opts.id+"`");
-        Object.assign(opts, options_stored);
-        opts.measured_time = opts.measured_time || timestamp - opts.timestamp;
-    }
-
-    if( opts.start_timer ) {
-        options_storage[opts.id] = opts;
-    }
-    if( opts.end_timer ) {
-        delete options_storage[opts.id];
-    }
-
-    opts.message = opts.message || opts.id;
 
     return opts;
+
+    function handle_timer_logic(opts) {
+        if( opts.start_timer ) {
+            opts.start_timestamp = opts.start_timestamp || get_timestamp();
+            opts.id = opts.id || Math.random();
+            if( options_storage[opts.id] ) {
+                throw new Error("trying to start a new timer while a timer is already running for `"+opts.id+"`");
+            }
+        }
+
+        if( opts.end_timer || opts.lap_time ) {
+            const timestamp = get_timestamp();
+            if( ! opts.id ) throw new Error("`id` required when `opts.end_timer==true`");
+            const options_stored = options_storage[opts.id];
+            if( ! options_stored ) throw new Error("couldn't find options storage for `"+opts.id+"`");
+            opts = Object.assign({}, options_stored, opts);
+            opts.measured_time = timestamp - opts.start_timestamp;
+        }
+
+        if( opts.end_timer ) {
+            delete options_storage[opts.id];
+        } else {
+            options_storage[opts.id] = opts;
+        }
+
+        if( opts.lap_time ) {
+            opts.nth_lap_time = (opts.nth_lap_time||0) + 1;
+        }
+
+        return opts;
+
+        function get_timestamp() {
+            if(typeof performance === "object") {
+                return performance.now()|0;
+            }
+            return new Date();
+        }
+    }
 }
 
 function print(options) {
@@ -79,11 +93,19 @@ function print(options) {
 
     const prefix =
         [PROJECT_NAME]
-        .concat( options.tag ? [options.tag] : [])
-        .concat( options.measured_time !== undefined ? [options.measured_time+'ms'] : [])
-        .map(s => '['+s+']').join('');
+        .concat( options.tag ? [options.tag] : [] )
+        .concat( options.lap_time && !options.end_timer ? ['lap-'+options.nth_lap_time] : [] )
+        .concat( options.measured_time !== undefined ? [options.measured_time+'ms'] : [] )
+        .map(s => '['+s+']')
+        .join('');
 
-    console.info(prefix+' '+options.message);
+    console.info(
+        [
+            prefix,
+            options.message||options.id,
+        ]
+        .filter(v=>!!v).join(' ')
+    );
 }
 
 function is_disabled(options) {
@@ -111,9 +133,3 @@ function get_setting(key) {
     return true;
 }
 
-function get_timestamp() {
-    if(typeof performance === "object") {
-        return performance.now()|0;
-    }
-    return new Date();
-}
