@@ -51,15 +51,15 @@ function process_arguments() {
             opts.start_timestamp = opts.start_timestamp || get_timestamp();
             opts.id = opts.id || Math.random();
             if( options_storage[opts.id] ) {
-                throw new Error("trying to start a new timer while a timer is already running for `"+opts.id+"`");
+                throw new Error(WRONG_USAGE+"trying to start a new timer while a timer is already running for `"+opts.id+"`");
             }
         }
 
         if( opts.end_timer || opts.lap_time ) {
             const timestamp = get_timestamp();
-            if( ! opts.id ) throw new Error("`id` required when `opts.end_timer==true`");
+            if( ! opts.id ) throw new Error(WRONG_USAGE+"`id` required when `opts.end_timer==true`");
             const options_stored = options_storage[opts.id];
-            if( ! options_stored ) throw new Error("couldn't find options storage for `"+opts.id+"`");
+            if( ! options_stored ) throw new Error(ERROR_PREFIX+"couldn't find options storage for `"+opts.id+"`");
             opts = Object.assign({}, options_stored, opts);
             opts.measured_time = timestamp - opts.start_timestamp;
         }
