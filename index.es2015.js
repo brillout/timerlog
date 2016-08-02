@@ -52,10 +52,9 @@ function process_arguments() {
     }
     if( opts.end_timer ) {
         const timestamp = get_timestamp();
-        const storage_key = opts.id || ![true,false].includes(opts.end_timer) && opts.end_timer;
-        if( !storage_key ) throw new Error("`id` should be an ID or `end_timer` should be the value returned when `start_timer` is truhty");
-        const options_stored = options_storage[storage_key];
-        if( !options_stored ) throw new Error("couldn't find options storage for `"+storage_key+"`");
+        if( ! opts.id ) throw new Error("`id` required when `opts.end_timer==true`");
+        const options_stored = options_storage[opts.id];
+        if( ! options_stored ) throw new Error("couldn't find options storage for `"+opts.id+"`");
         Object.assign(opts, options_stored);
         opts.measured_time = opts.measured_time || timestamp - opts.timestamp;
     }
