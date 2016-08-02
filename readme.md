@@ -4,7 +4,8 @@ Following will print `[timerlog][generate-random-numbers][70ms] A million random
 
 ```js
 // example.js
-var timerlog = require('timerlog');
+var timerlog = require('timerlog'); // `npm install timerlog`
+                                    // works in Node.js and in the browser
 
 
 var AMOUNT = 1e6;
