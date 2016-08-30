@@ -8,11 +8,13 @@ const PROJECT_NAME = 'timerlog';
 const ERROR_PREFIX = PROJECT_NAME+': ';
 const WRONG_USAGE = ERROR_PREFIX+'wrong usage: ';
 
+let disable_all = false;
+
 function timerlog() {
     const options = process_arguments.apply(null, arguments);
 
     Object.keys(options).forEach(k => {
-        if( ! ['message', 'id', 'start_timer', 'end_timer', 'start_timestamp', 'measured_time', 'tag', 'disabled', 'measured_time_threshold', 'lap_time', 'nth_lap_time', ].includes(k) ) {
+        if( ! ['message', 'id', 'start_timer', 'end_timer', 'start_timestamp', 'measured_time', 'tag', 'disabled', 'measured_time_threshold', 'lap_time', 'nth_lap_time', 'disable_all', ].includes(k) ) {
             throw new Error(WRONG_USAGE+'unknown argument `'+k+'`');
         }
     });
@@ -24,6 +26,9 @@ function timerlog() {
         return;
     }
     if( options.disabled ) {
+        return;
+    }
+    if( disable_all ) {
         return;
     }
     print(options);
@@ -42,6 +47,10 @@ function process_arguments() {
 
     if( opts.lap_time || opts.start_timer || opts.end_timer ) {
         opts = handle_timer_logic(opts);
+    }
+
+    if( opts.disable_all !== undefined ) {
+        disable_all = opts.disable_all;
     }
 
     return opts;
