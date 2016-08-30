@@ -74,3 +74,41 @@ will print
 [timerlog][generate-random-numbers][lap-5][177ms] Generating random numbers
 [timerlog][generate-random-numbers][205ms] Random numbers sum: 2499861.740182983
 ```
+
+## FAQ
+
+#### I don't have Node.js in my environment. How can I load timerlog?
+
+You can load timerlog with RequireJS instead:
+
+```js
+window.module = {};
+requirejs(['path/to/timerlog/dist/index.es5'], function() {
+  var timerlog = module.exports;
+  module = undefined;
+
+  timerlog({
+    id: 'simple-usage',
+    start_timer: true,
+    message: 'A million random numbers generated'
+  });
+
+  // ...
+});
+```
+
+#### I try to use timerlog on client-side but it won't print anything.
+
+You have to enable timerlog's logging:
+
+```js
+localStorage['timerlog'] = 1;
+```
+
+#### I get errors like `(intermediate value).includes is not a function` or `Object.assign is not a function` on older browsers.
+
+timerlog requires some polyfills on older browsers. E.g. on Firefox 31.0 (used by Travis CI) it
+requires:
+
+* [Array.prototype.includes](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes#Polyfill)
+* [Object.assign](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign#Polyfill)
