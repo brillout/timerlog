@@ -77,26 +77,6 @@ will print
 
 ## FAQ
 
-#### I don't have Node.js in my environment. How can I load timerlog?
-
-You can load timerlog with RequireJS instead:
-
-```js
-window.module = {};
-requirejs(['path/to/timerlog/dist/index.es5'], function() {
-  var timerlog = module.exports;
-  module = undefined;
-
-  timerlog({
-    id: 'simple-usage',
-    start_timer: true,
-    message: 'A million random numbers generated'
-  });
-
-  // ...
-});
-```
-
 #### I try to use timerlog on client-side but it won't print anything.
 
 You have to enable timerlog's logging:
