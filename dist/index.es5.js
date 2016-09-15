@@ -134,26 +134,73 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         function is_disabled(options) {
             var locally_enabled = !options.tag ? null : get_setting(PROJECT_NAME + '_' + options.tag);
             var globally_enabled = get_setting(PROJECT_NAME);
-            if (locally_enabled || globally_enabled) {
-                return false;
-            }
-            return true;
-        }
+            var is_production = get_is_production();
 
-        function get_setting(key) {
-            if (typeof window === 'undefined') {
+            if (locally_enabled !== null) {
+                return !locally_enabled;
+            }
+            if (globally_enabled !== null) {
+                return !globally_enabled;
+            }
+            return is_production;
+
+            function get_setting(key) {
+                if (is_browser()) {
+                    return get_setting_in_browser(key);
+                }
+
+                if (is_nodejs()) {
+                    var val = get_setting_in_nodejs(key);
+                    if (val !== null) {
+                        return val;
+                    }
+                    return get_setting_in_nodejs(key.toUpperCase());
+                }
+
+                unexpected_env();
+            }
+
+            function get_setting_in_browser(key) {
+                return interpret_setting_value(window.localStorage[key]);
+            }
+
+            function get_setting_in_nodejs(key) {
+                return interpret_setting_value(process.env[key]);
+            }
+
+            function interpret_setting_value(val) {
+                if (!val) {
+                    return null;
+                }
+                try {
+                    return !!JSON.parse(val);
+                } catch (e) {};
                 return true;
             }
-            var localStorageValue = window.localStorage[key];
-            if (!localStorageValue) {
-                return false;
-            }
-            try {
-                if (!JSON.parse(localStorageValue)) {
-                    return false;
+
+            function get_is_production() {
+                if (is_browser()) {
+                    return window.location.hostname !== 'localhost';
                 }
-            } catch (e) {};
-            return true;
+
+                if (is_nodejs()) {
+                    return process.env["NODE_ENV"] === "production";
+                }
+
+                unexpected_env();
+            }
+
+            function is_browser() {
+                return typeof window !== 'undefined';
+            }
+
+            function is_nodejs() {
+                return typeof (process || {}).env !== 'undefined';
+            }
+
+            function unexpected_env() {
+                throw new Error(ERROR_PREFIX + "unexpected environement; neither `window` or `process.env` is defined");
+            }
         }
     }
 
