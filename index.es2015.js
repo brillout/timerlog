@@ -21,8 +21,20 @@
 
         const PROJECT_NAME = 'timerlog';
 
-        const ERROR_PREFIX = PROJECT_NAME+': ';
-        const WRONG_USAGE = ERROR_PREFIX+'wrong usage: ';
+        const OPTIONS = [
+            'message',
+            'id',
+            'start_timer',
+            'end_timer',
+            'start_timestamp',
+            'measured_time',
+            'tag',
+            'disabled',
+            'measured_time_threshold',
+            'lap_time',
+            'nth_lap_time',
+            'disable_all',
+        ];
 
         return timerlog;
 
@@ -30,8 +42,8 @@
             const options = process_arguments.apply(null, arguments);
 
             Object.keys(options).forEach(k => {
-                if( ! ['message', 'id', 'start_timer', 'end_timer', 'start_timestamp', 'measured_time', 'tag', 'disabled', 'measured_time_threshold', 'lap_time', 'nth_lap_time', 'disable_all', ].includes(k) ) {
-                    throw new Error(WRONG_USAGE+'unknown argument `'+k+'`');
+                if( ! OPTIONS.includes(k) ) {
+                    throw_error({message: 'unknown argument `'+k+'`'});
                 }
             });
 
@@ -52,13 +64,13 @@
 
         function process_arguments() {
             if( arguments.length !== 1 || !arguments[0] || arguments[0].constructor !== Object ) {
-                throw new Error(WRONG_USAGE+PROJECT_NAME+' should be called with exactly one argument and this argument should be an object');
+                throw_error({message: PROJECT_NAME+' should be called with exactly one argument and this argument should be an object'});
             }
 
             let opts = arguments[0];
 
             if( [opts.lap_time, opts.start_timer, opts.end_timer].filter(v=>!!v).length > 1 ) {
-                throw new Error(WRONG_USAGE+"only exactly one of `start_timer`, `end_timer`, or `lap_time` should be truthy");
+                throw_error({message: "only exactly one of `start_timer`, `end_timer`, or `lap_time` should be truthy"});
             }
 
             if( opts.lap_time || opts.start_timer || opts.end_timer ) {
@@ -76,15 +88,15 @@
                     opts.start_timestamp = opts.start_timestamp || get_timestamp();
                     opts.id = opts.id || Math.random();
                     if( options_storage[opts.id] ) {
-                        throw new Error(WRONG_USAGE+"trying to start a new timer while a timer is already running for `"+opts.id+"`");
+                        throw_error({is_warning: true, message:"trying to start a new timer while a timer is already running for `"+opts.id+"`"});
                     }
                 }
 
                 if( opts.end_timer || opts.lap_time ) {
                     const timestamp = get_timestamp();
-                    if( ! opts.id ) throw new Error(WRONG_USAGE+"`id` required when `opts.end_timer==true`");
+                    if( ! opts.id ) throw_error({message: "`id` required when `opts.end_timer==true`"});
                     const options_stored = options_storage[opts.id];
-                    if( ! options_stored ) throw new Error(ERROR_PREFIX+"couldn't find options storage for `"+opts.id+"`");
+                    if( ! options_stored ) throw_error({is_internal_error: true, message:"couldn't find options storage for `"+opts.id+"`"});
                     opts = Object.assign({}, options_stored, opts);
                     opts.measured_time = timestamp - opts.start_timestamp;
                 }
@@ -201,7 +213,23 @@
             }
 
             function unexpected_env() {
-                throw new Error(ERROR_PREFIX+"unexpected environement; neither `window` or `process.env` is defined");
+                throw_error({is_internal_error: true, message: "unexpected environement; neither `window` or `process.env` is defined"});
+            }
+        } 
+
+        function throw_error({message, is_internal_error=false, is_warning=false}) { 
+            const PREFIX__ERROR = PROJECT_NAME + ': ';
+            const PREFIX__WRONG_USAGE = PREFIX__ERROR + 'wrong usage: ';
+            const PREFIX__INTERNAL_ERROR = PREFIX__ERROR + 'unexpected error: ';
+
+            const prefix = is_internal_error ? PREFIX__INTERNAL_ERROR : PREFIX__WRONG_USAGE;
+
+            const msg = prefix+message;
+
+            if( is_warning ) {
+                console.warn(msg);
+            } else {
+                throw new Error(msg);
             }
         }
     }
