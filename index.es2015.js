@@ -77,6 +77,22 @@
                 throw_error({message: "only exactly one of `start_timer`, `end_timer`, or `lap_time` should be truthy"});
             }
 
+            [
+                {
+                    option_name: 'tag',
+                    constructor: String,
+                },
+                {
+                    option_name: 'tags',
+                    constructor: Array,
+                },
+            ]
+            .forEach(({option_name, constructor}) => {
+                if( opts[option_name] && opts[option_name].constructor!==constructor ) {
+                    throw_error({message: "option `"+option_name+"` should be a `"+constructor+"`"});
+                }
+            });
+
             if( opts.tag || opts.tags ) {
                 opts.tags = (
                     []
