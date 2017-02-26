@@ -29,6 +29,7 @@
             'start_timestamp',
             'measured_time',
             'tag',
+            'tags',
             'disabled',
             'measured_time_threshold',
             'lap_time',
@@ -40,12 +41,6 @@
 
         function timerlog() {
             const options = process_arguments.apply(null, arguments);
-
-            Object.keys(options).forEach(k => {
-                if( ! OPTIONS.includes(k) ) {
-                    throw_error({message: 'unknown argument `'+k+'`'});
-                }
-            });
 
             if( options.start_timer && !options.end_timer && !options.lap_time ) {
                 return options.id;
@@ -59,18 +54,36 @@
             if( global_options.disable_all ) {
                 return;
             }
+            if( is_disabled(options) ) {
+                return;
+            }
             print(options);
         }
 
-        function process_arguments() {
+        function process_arguments() { 
             if( arguments.length !== 1 || !arguments[0] || arguments[0].constructor !== Object ) {
                 throw_error({message: PROJECT_NAME+' should be called with exactly one argument and this argument should be an object'});
             }
 
-            let opts = arguments[0];
+            let opts = Object.assign({}, arguments[0]);
+
+            Object.keys(opts).forEach(k => {
+                if( ! OPTIONS.includes(k) ) {
+                    throw_error({message: 'unknown argument `'+k+'`'});
+                }
+            });
 
             if( [opts.lap_time, opts.start_timer, opts.end_timer].filter(v=>!!v).length > 1 ) {
                 throw_error({message: "only exactly one of `start_timer`, `end_timer`, or `lap_time` should be truthy"});
+            }
+
+            if( opts.tag || opts.tags ) {
+                opts.tags = (
+                    []
+                    .concat( opts.tag ? [opts.tag] : [] )
+                    .concat( opts.tags || [] )
+                );
+                delete opts.tag;
             }
 
             if( opts.lap_time || opts.start_timer || opts.end_timer ) {
@@ -120,17 +133,12 @@
                     return new Date();
                 }
             }
-        }
+        } 
 
-        function print(options) {
-
-            if( is_disabled(options) ) {
-                return;
-            }
-
+        function print(options) { 
             const prefix =
                 [PROJECT_NAME]
-                .concat( options.tag ? [options.tag] : [] )
+                .concat( options.tags || [] )
                 .concat( options.lap_time && !options.end_timer ? ['lap-'+options.nth_lap_time] : [] )
                 .concat( options.measured_time !== undefined ? [options.measured_time+'ms'] : [] )
                 .map(s => '['+s+']')
@@ -143,19 +151,33 @@
                 ]
                 .filter(v=>!!v).join(' ')
             );
-        }
+        } 
 
-        function is_disabled(options) {
-            const locally_enabled = !options.tag ? null : get_setting(PROJECT_NAME+'_'+options.tag);
+        function is_disabled(options) { 
+            const locally_enabled = (() => {
+                const tags_setting = (
+                    (options.tags || [])
+                    .map(t => get_setting(PROJECT_NAME+'_'+t))
+                    .filter(v => v!==null)
+                );
+                if( tags_setting.length>0 ) {
+                    return tags_setting[0];
+                }
+                return null;
+            })();
+
             const globally_enabled = get_setting(PROJECT_NAME);
+
             const is_production = get_is_production();
 
             if( locally_enabled !== null ) {
                 return !locally_enabled;
             }
+
             if( globally_enabled !== null ) {
                 return !globally_enabled;
             }
+
             return is_production;
 
             function get_setting(key) {
@@ -231,10 +253,10 @@
             } else {
                 throw new Error(msg);
             }
-        }
+        } 
     }
 
-    function umd_export(factory) {
+    function umd_export(factory) { 
         // taken from https://github.com/umdjs/umd
         if (typeof define === 'function' && define.amd) {
             define([], factory);
@@ -243,5 +265,5 @@
         } else {
             root.returnExports = factory();
         }
-    }
+    } 
 })(this);
