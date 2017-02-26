@@ -30,7 +30,7 @@
             'measured_time',
             'tag',
             'tags',
-            'disabled',
+            'disable',
             'measured_time_threshold',
             'lap_time',
             'nth_lap_time',
@@ -48,7 +48,7 @@
             if( options.measured_time !== undefined && options.measured_time < options.measured_time_threshold ) {
                 return;
             }
-            if( options.disabled ) {
+            if( options.disable ) {
                 return;
             }
             if( global_options.disable_all ) {

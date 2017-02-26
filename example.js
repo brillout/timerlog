@@ -36,7 +36,7 @@ var log_id = timerlog({
     start_timer: true,
     message: 'Generating random numbers',
     tag: 'generate-random-numbers',
-    disabled: false // `disabled: true` -> do not print
+    disable: false // `disable: true` -> do not print
 });
 
 var sum = 0;
