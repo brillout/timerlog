@@ -25,19 +25,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         var PROJECT_NAME = 'timerlog';
 
-        var ERROR_PREFIX = PROJECT_NAME + ': ';
-        var WRONG_USAGE = ERROR_PREFIX + 'wrong usage: ';
+        var OPTIONS = ['message', 'id', 'start_timer', 'end_timer', 'start_timestamp', 'measured_time', 'tag', 'tags', 'disable', 'measured_time_threshold', 'lap_time', 'nth_lap_time', 'disable_all'];
 
         return timerlog;
 
         function timerlog() {
             var options = process_arguments.apply(null, arguments);
-
-            Object.keys(options).forEach(function (k) {
-                if (!['message', 'id', 'start_timer', 'end_timer', 'start_timestamp', 'measured_time', 'tag', 'disabled', 'measured_time_threshold', 'lap_time', 'nth_lap_time', 'disable_all'].includes(k)) {
-                    throw new Error(WRONG_USAGE + 'unknown argument `' + k + '`');
-                }
-            });
 
             if (options.start_timer && !options.end_timer && !options.lap_time) {
                 return options.id;
@@ -45,10 +38,13 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             if (options.measured_time !== undefined && options.measured_time < options.measured_time_threshold) {
                 return;
             }
-            if (options.disabled) {
+            if (options.disable) {
                 return;
             }
             if (global_options.disable_all) {
+                return;
+            }
+            if (is_disabled(options)) {
                 return;
             }
             print(options);
@@ -56,15 +52,41 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
         function process_arguments() {
             if (arguments.length !== 1 || !arguments[0] || arguments[0].constructor !== Object) {
-                throw new Error(WRONG_USAGE + PROJECT_NAME + ' should be called with exactly one argument and this argument should be an object');
+                throw_error({ message: PROJECT_NAME + ' should be called with exactly one argument and this argument should be an object' });
             }
 
-            var opts = arguments[0];
+            var opts = Object.assign({}, arguments[0]);
+
+            Object.keys(opts).forEach(function (k) {
+                if (!OPTIONS.includes(k)) {
+                    throw_error({ message: 'unknown argument `' + k + '`' });
+                }
+            });
 
             if ([opts.lap_time, opts.start_timer, opts.end_timer].filter(function (v) {
                 return !!v;
             }).length > 1) {
-                throw new Error(WRONG_USAGE + "only exactly one of `start_timer`, `end_timer`, or `lap_time` should be truthy");
+                throw_error({ message: "only exactly one of `start_timer`, `end_timer`, or `lap_time` should be truthy" });
+            }
+
+            [{
+                option_name: 'tag',
+                constructor: String
+            }, {
+                option_name: 'tags',
+                constructor: Array
+            }].forEach(function (_ref) {
+                var option_name = _ref.option_name;
+                var constructor = _ref.constructor;
+
+                if (opts[option_name] && opts[option_name].constructor !== constructor) {
+                    throw_error({ message: "option `" + option_name + "` should be a `" + constructor + "`" });
+                }
+            });
+
+            if (opts.tag || opts.tags) {
+                opts.tags = [].concat(opts.tag ? [opts.tag] : []).concat(opts.tags || []);
+                delete opts.tag;
             }
 
             if (opts.lap_time || opts.start_timer || opts.end_timer) {
@@ -82,15 +104,15 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                     opts.start_timestamp = opts.start_timestamp || get_timestamp();
                     opts.id = opts.id || Math.random();
                     if (options_storage[opts.id]) {
-                        throw new Error(WRONG_USAGE + "trying to start a new timer while a timer is already running for `" + opts.id + "`");
+                        throw_error({ is_warning: true, message: "trying to start a new timer while a timer is already running for `" + opts.id + "`" });
                     }
                 }
 
                 if (opts.end_timer || opts.lap_time) {
                     var timestamp = get_timestamp();
-                    if (!opts.id) throw new Error(WRONG_USAGE + "`id` required when `opts.end_timer==true`");
+                    if (!opts.id) throw_error({ message: "`id` required when `opts.end_timer==true`" });
                     var options_stored = options_storage[opts.id];
-                    if (!options_stored) throw new Error(ERROR_PREFIX + "couldn't find options storage for `" + opts.id + "`");
+                    if (!options_stored) throw_error({ is_internal_error: true, message: "couldn't find options storage for `" + opts.id + "`" });
                     opts = Object.assign({}, options_stored, opts);
                     opts.measured_time = timestamp - opts.start_timestamp;
                 }
@@ -117,12 +139,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         }
 
         function print(options) {
-
-            if (is_disabled(options)) {
-                return;
-            }
-
-            var prefix = [PROJECT_NAME].concat(options.tag ? [options.tag] : []).concat(options.lap_time && !options.end_timer ? ['lap-' + options.nth_lap_time] : []).concat(options.measured_time !== undefined ? [options.measured_time + 'ms'] : []).map(function (s) {
+            var prefix = [PROJECT_NAME].concat(options.tags || []).concat(options.lap_time && !options.end_timer ? ['lap-' + options.nth_lap_time] : []).concat(options.measured_time !== undefined ? [options.measured_time + 'ms'] : []).map(function (s) {
                 return '[' + s + ']';
             }).join('');
 
@@ -132,16 +149,30 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
         }
 
         function is_disabled(options) {
-            var locally_enabled = !options.tag ? null : get_setting(PROJECT_NAME + '_' + options.tag);
+            var locally_enabled = function () {
+                var tags_setting = (options.tags || []).map(function (t) {
+                    return get_setting(PROJECT_NAME + '_' + t);
+                }).filter(function (v) {
+                    return v !== null;
+                });
+                if (tags_setting.length > 0) {
+                    return tags_setting[0];
+                }
+                return null;
+            }();
+
             var globally_enabled = get_setting(PROJECT_NAME);
+
             var is_production = get_is_production();
 
             if (locally_enabled !== null) {
                 return !locally_enabled;
             }
+
             if (globally_enabled !== null) {
                 return !globally_enabled;
             }
+
             return is_production;
 
             function get_setting(key) {
@@ -199,7 +230,29 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             }
 
             function unexpected_env() {
-                throw new Error(ERROR_PREFIX + "unexpected environement; neither `window` or `process.env` is defined");
+                throw_error({ is_internal_error: true, message: "unexpected environement; neither `window` or `process.env` is defined" });
+            }
+        }
+
+        function throw_error(_ref2) {
+            var message = _ref2.message;
+            var _ref2$is_internal_err = _ref2.is_internal_error;
+            var is_internal_error = _ref2$is_internal_err === undefined ? false : _ref2$is_internal_err;
+            var _ref2$is_warning = _ref2.is_warning;
+            var is_warning = _ref2$is_warning === undefined ? false : _ref2$is_warning;
+
+            var PREFIX__ERROR = PROJECT_NAME + ': ';
+            var PREFIX__WRONG_USAGE = PREFIX__ERROR + 'wrong usage: ';
+            var PREFIX__INTERNAL_ERROR = PREFIX__ERROR + 'unexpected error: ';
+
+            var prefix = is_internal_error ? PREFIX__INTERNAL_ERROR : PREFIX__WRONG_USAGE;
+
+            var msg = prefix + message;
+
+            if (is_warning) {
+                console.warn(msg);
+            } else {
+                throw new Error(msg);
             }
         }
     }
