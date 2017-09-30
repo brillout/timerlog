@@ -1,6 +1,6 @@
 {
   "name": "timerlog",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "A small utility to measure and log time",
   "repository": "github:brillout/timerlog",
   "main": "dist/index.es5.js",
@@ -10,12 +10,13 @@
     ]
   },
   "scripts": {
-    "build": "mkdir -p dist/ && ./node_modules/.bin/babel index.es2015.js | ./node_modules/.bin/umd timerlog -c > dist/index.es5.js"
+    "build": "mkdir -p dist/ && ./node_modules/.bin/babel index.es2015.js | ./node_modules/.bin/umd timerlog -c | ./node_modules/.bin/uglifyjs > dist/index.es5.js"
   },
   "dependencies": {},
   "devDependencies": {
     "babel-cli": "*",
     "babel-preset-env": "*",
+    "uglify-js": "*",
     "umd": "*"
   }
 }
